@@ -1,0 +1,621 @@
+{
+  "study": {
+    "title": "Leveraging People Analytics for Employer Branding: A Text Mining Study of Employee Reviews in IT Industry",
+    "journal": "Journal of Chinese Human Resources Management",
+    "volume": "16",
+    "issue": "2",
+    "pages": "97-120",
+    "year": 2025,
+    "doi": "10.47297/wspchrmWSP2040-800506.20251602",
+    "licence": "CC BY 4.0",
+    "access": "open access"
+  },
+  "corpus": {
+    "reviews_parsed": 27159,
+    "reviews_analysed": 21482,
+    "retention_pct": 79.1,
+    "companies": 11,
+    "company_description": "Fortune 500 ranked IT companies in the United States",
+    "source": "Indeed.com",
+    "fields": [
+      "review",
+      "job position",
+      "review date",
+      "rating",
+      "employee status"
+    ],
+    "period": "2012-2020",
+    "topics": 8
+  },
+  "methods": {
+    "design": "mixed research design: bigram analysis and Structural Topic Modeling for the quantitative stage, author interpretation of model output for the qualitative stage",
+    "collection": "custom Python script using BeautifulSoup, run through Google Colab, restricted to publicly accessible information",
+    "preprocessing": [
+      "Tokenization and sentence segmentation",
+      "Stopword removal",
+      "Lemmatization and stemming",
+      "Removal of duplicates and empty reviews"
+    ],
+    "topic_model": "Structural Topic Modeling (STM), an extension of Latent Dirichlet Allocation that conditions topic prevalence on document metadata",
+    "covariates": [
+      "employment status",
+      "review year",
+      "review rating"
+    ],
+    "k_selection": "semantic coherence and exclusivity across candidate models from 4 to 10 topics, combined with the author's reading of the topics",
+    "validation": "semantic coherence and exclusivity scores, plus manual labelling and interpretation against at least twenty reviews per topic"
+  },
+  "topics": [
+    {
+      "id": 3,
+      "label": "Features of Great Companies",
+      "proportion_pct": 23,
+      "top_words": [
+        "work",
+        "great",
+        "good",
+        "companies",
+        "place",
+        "lot",
+        "people",
+        "environ",
+        "opportunity",
+        "learn",
+        "benefit"
+      ],
+      "evp_mapping": "Employer attractiveness overall",
+      "summary": "Growth potential, managerial motivation, workplace enjoyment, strong culture, flexible work and career progression.",
+      "rating_association": "high",
+      "status_lean": "current",
+      "trend_2012_2020": "not stated"
+    },
+    {
+      "id": 7,
+      "label": "Economic Value and Layoffs",
+      "proportion_pct": 17,
+      "top_words": [
+        "company",
+        "year",
+        "employee",
+        "get",
+        "time",
+        "job",
+        "change",
+        "pay",
+        "people",
+        "layoff"
+      ],
+      "evp_mapping": "Economic value",
+      "summary": "Layoffs, limited or absent raises and low salaries, alongside financial benefits and job security.",
+      "rating_association": "low",
+      "status_lean": "current",
+      "trend_2012_2020": "increased"
+    },
+    {
+      "id": 5,
+      "label": "Social and Development Value",
+      "proportion_pct": 14,
+      "top_words": [
+        "companies",
+        "technology",
+        "culture",
+        "client",
+        "mani",
+        "organ",
+        "career",
+        "opportunities"
+      ],
+      "evp_mapping": "Social value and development value",
+      "summary": "Development opportunities the company provides, alongside its values and culture.",
+      "rating_association": "high",
+      "status_lean": "current",
+      "trend_2012_2020": "not stated"
+    },
+    {
+      "id": 8,
+      "label": "Joy at Work",
+      "proportion_pct": 12,
+      "top_words": [
+        "job",
+        "work",
+        "part",
+        "enjoy",
+        "day",
+        "learn",
+        "time",
+        "help",
+        "typic",
+        "hardest"
+      ],
+      "evp_mapping": "Interest value",
+      "summary": "Work enjoyment as a factor shaping the overall employment experience, alongside challenges and mixed emotions.",
+      "rating_association": "high",
+      "status_lean": "former",
+      "trend_2012_2020": "declined"
+    },
+    {
+      "id": 1,
+      "label": "Management Value",
+      "proportion_pct": 11,
+      "top_words": [
+        "manage",
+        "employee",
+        "work",
+        "expect",
+        "stress",
+        "job",
+        "high",
+        "need",
+        "team",
+        "little",
+        "lack",
+        "poor"
+      ],
+      "evp_mapping": "Management value",
+      "summary": "Complaints about management, supervisors and directors, with poor leadership and lack of managerial support recurring.",
+      "rating_association": "low",
+      "status_lean": "former",
+      "trend_2012_2020": "increased"
+    },
+    {
+      "id": 4,
+      "label": "Job Duties",
+      "proportion_pct": 10,
+      "top_words": [
+        "support",
+        "custom",
+        "service",
+        "product",
+        "team",
+        "project",
+        "process",
+        "manage",
+        "provide"
+      ],
+      "evp_mapping": "Role content",
+      "summary": "Day-to-day responsibilities, the scope of the role and contributions to company operations.",
+      "rating_association": "even",
+      "status_lean": "former",
+      "trend_2012_2020": "declined"
+    },
+    {
+      "id": 2,
+      "label": "Application Value",
+      "proportion_pct": 8,
+      "top_words": [
+        "get time",
+        "supervisor",
+        "pay",
+        "day",
+        "call",
+        "hour",
+        "train",
+        "health",
+        "people",
+        "job"
+      ],
+      "evp_mapping": "Application value",
+      "summary": "How employees apply their skills in the role, particularly handling inbound customer calls and assisting clients.",
+      "rating_association": "low",
+      "status_lean": "former",
+      "trend_2012_2020": "increased"
+    },
+    {
+      "id": 6,
+      "label": "Location and Working Conditions",
+      "proportion_pct": 5,
+      "top_words": [
+        "call",
+        "center",
+        "office",
+        "back",
+        "computer",
+        "help",
+        "work",
+        "like",
+        "[employer]",
+        "love",
+        "phone",
+        "got"
+      ],
+      "evp_mapping": "Working conditions",
+      "summary": "The location of the work and the working conditions, described in both positive and negative terms.",
+      "rating_association": "high",
+      "status_lean": "former",
+      "trend_2012_2020": "unchanged",
+      "top_words_note": "One of this topic's published top words is a stemmed employer name, a model artefact of reviews naming their own company. It is masked here so that no employer is identifiable from this repository."
+    }
+  ],
+  "bigram_networks": [
+    {
+      "id": "pros_current",
+      "sentiment": "pros",
+      "status": "Current employees",
+      "headline": "Work-life balance leads, mentioned more than 160 times.",
+      "reported_counts": [
+        {
+          "pair": "life balance",
+          "count": 160,
+          "qualifier": "more than"
+        }
+      ],
+      "edges": [
+        {
+          "a": "work",
+          "b": "life",
+          "weight": 4
+        },
+        {
+          "a": "life",
+          "b": "balance",
+          "weight": 5
+        },
+        {
+          "a": "good",
+          "b": "pay",
+          "weight": 2
+        },
+        {
+          "a": "good",
+          "b": "benefit",
+          "weight": 2
+        },
+        {
+          "a": "great",
+          "b": "people",
+          "weight": 2
+        },
+        {
+          "a": "great",
+          "b": "benefit",
+          "weight": 2
+        },
+        {
+          "a": "good",
+          "b": "work",
+          "weight": 2
+        },
+        {
+          "a": "work",
+          "b": "environment",
+          "weight": 2
+        },
+        {
+          "a": "work",
+          "b": "flexible",
+          "weight": 1
+        },
+        {
+          "a": "flexible",
+          "b": "hour",
+          "weight": 1
+        },
+        {
+          "a": "flexible",
+          "b": "schedule",
+          "weight": 1
+        },
+        {
+          "a": "work",
+          "b": "remote",
+          "weight": 1
+        },
+        {
+          "a": "free",
+          "b": "lunch",
+          "weight": 1
+        },
+        {
+          "a": "job",
+          "b": "security",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "pros_former",
+      "sentiment": "pros",
+      "status": "Former employees",
+      "headline": "Good pay and good benefits lead, mentioned more than 128 times.",
+      "reported_counts": [
+        {
+          "pair": "good pay",
+          "count": 128,
+          "qualifier": "more than"
+        },
+        {
+          "pair": "good benefit",
+          "count": 128,
+          "qualifier": "more than"
+        }
+      ],
+      "edges": [
+        {
+          "a": "good",
+          "b": "pay",
+          "weight": 5
+        },
+        {
+          "a": "good",
+          "b": "benefit",
+          "weight": 5
+        },
+        {
+          "a": "life",
+          "b": "balance",
+          "weight": 4
+        },
+        {
+          "a": "work",
+          "b": "life",
+          "weight": 4
+        },
+        {
+          "a": "work",
+          "b": "environment",
+          "weight": 4
+        },
+        {
+          "a": "great",
+          "b": "benefit",
+          "weight": 3
+        },
+        {
+          "a": "good",
+          "b": "people",
+          "weight": 3
+        },
+        {
+          "a": "great",
+          "b": "pay",
+          "weight": 2
+        },
+        {
+          "a": "great",
+          "b": "work",
+          "weight": 1
+        },
+        {
+          "a": "work",
+          "b": "good",
+          "weight": 1
+        },
+        {
+          "a": "work",
+          "b": "remote",
+          "weight": 1
+        },
+        {
+          "a": "work",
+          "b": "flexible",
+          "weight": 1
+        },
+        {
+          "a": "free",
+          "b": "lunch",
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "cons_current",
+      "sentiment": "cons",
+      "status": "Current employees",
+      "headline": "Job security is the leading complaint, mentioned 99 times.",
+      "reported_counts": [
+        {
+          "pair": "job security",
+          "count": 99,
+          "qualifier": "exactly"
+        }
+      ],
+      "edges": [
+        {
+          "a": "job",
+          "b": "security",
+          "weight": 5
+        },
+        {
+          "a": "short",
+          "b": "break",
+          "weight": 4
+        },
+        {
+          "a": "low",
+          "b": "pay",
+          "weight": 4
+        },
+        {
+          "a": "work",
+          "b": "life",
+          "weight": 4
+        },
+        {
+          "a": "life",
+          "b": "balance",
+          "weight": 4
+        },
+        {
+          "a": "long",
+          "b": "hour",
+          "weight": 3
+        },
+        {
+          "a": "poor",
+          "b": "management",
+          "weight": 3
+        },
+        {
+          "a": "bad",
+          "b": "management",
+          "weight": 2
+        },
+        {
+          "a": "low",
+          "b": "salary",
+          "weight": 1
+        },
+        {
+          "a": "short",
+          "b": "lunch",
+          "weight": 1
+        },
+        {
+          "a": "health",
+          "b": "insurance",
+          "weight": 1
+        },
+        {
+          "a": "health",
+          "b": "care",
+          "weight": 1
+        },
+        {
+          "a": "advancement",
+          "b": "opportunity",
+          "weight": 1
+        },
+        {
+          "a": "contract",
+          "b": "work",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "cons_former",
+      "sentiment": "cons",
+      "status": "Former employees",
+      "headline": "Job security and short breaks are the leading complaints, and management is raised more than by current employees.",
+      "reported_counts": [],
+      "edges": [
+        {
+          "a": "job",
+          "b": "security",
+          "weight": 5
+        },
+        {
+          "a": "short",
+          "b": "break",
+          "weight": 5
+        },
+        {
+          "a": "work",
+          "b": "life",
+          "weight": 4
+        },
+        {
+          "a": "life",
+          "b": "balance",
+          "weight": 4
+        },
+        {
+          "a": "long",
+          "b": "hour",
+          "weight": 4
+        },
+        {
+          "a": "poor",
+          "b": "management",
+          "weight": 3
+        },
+        {
+          "a": "upper",
+          "b": "management",
+          "weight": 2
+        },
+        {
+          "a": "low",
+          "b": "pay",
+          "weight": 3
+        },
+        {
+          "a": "pay",
+          "b": "raise",
+          "weight": 1
+        },
+        {
+          "a": "work",
+          "b": "environment",
+          "weight": 1
+        },
+        {
+          "a": "short",
+          "b": "lunch",
+          "weight": 1
+        }
+      ]
+    }
+  ],
+  "weight_scale": {
+    "note": "The study publishes the bigram results as network figures with a banded line scale. Exact frequencies appear in the text only for the pairs listed under reported_counts, so each edge here carries the band shown in the figure rather than a reconstructed count.",
+    "bands": {
+      "1": "lightest band",
+      "2": "second band",
+      "3": "middle band",
+      "4": "fourth band",
+      "5": "heaviest band"
+    }
+  },
+  "covariate_findings": {
+    "status": {
+      "current_leaning": [
+        "Features of Great Companies",
+        "Economic Value and Layoffs",
+        "Social and Development Value"
+      ],
+      "former_leaning": [
+        "Job Duties",
+        "Joy at Work",
+        "Management Value",
+        "Location and Working Conditions",
+        "Application Value"
+      ],
+      "statement": "Current employees most frequently discuss features of great companies, followed by economic value and layoffs, and social and development value. Former employees engage more with job duties, joy at work, management value, location and working conditions, and application value."
+    },
+    "time": {
+      "period": "2012-2020",
+      "increased": [
+        "Economic Value and Layoffs",
+        "Management Value",
+        "Application Value"
+      ],
+      "declined": [
+        "Joy at Work",
+        "Job Duties"
+      ],
+      "unchanged": [
+        "Location and Working Conditions"
+      ],
+      "statement": "Economic value and layoffs, along with management value, increased over the period, indicating growing concerns about financial security and leadership effectiveness. Joy at work and job duties declined. Location and working conditions remained unchanged."
+    },
+    "rating": {
+      "low_rating": [
+        "Management Value",
+        "Economic Value and Layoffs",
+        "Application Value"
+      ],
+      "high_rating": [
+        "Features of Great Companies",
+        "Joy at Work",
+        "Social and Development Value",
+        "Location and Working Conditions"
+      ],
+      "even": [
+        "Job Duties"
+      ],
+      "statement": "Management value, and economic value and layoffs, are strongly associated with one-star ratings. Features of great companies is highly related to five-star ratings, as are joy at work, social and development value, and location and working conditions. Job duties is distributed evenly across ratings."
+    }
+  },
+  "headline_findings": [
+    "Bigram analysis identified work-life balance and competitive compensation as the most positively associated factors.",
+    "Job security emerged as the most frequently criticised aspect.",
+    "Structural Topic Modeling identified eight topics covering five dominant EVP dimensions that IT professionals prioritise.",
+    "Emphasis on management quality and economic value grew over the period, while joy at work declined."
+  ],
+  "research_questions": [
+    "What do employees in the IT industry discuss about their workplace on a job posting crowdsourced website?",
+    "Do those reviews differ based on the status of employees, time of review, and type of reviews?",
+    "What can managers, policymakers, and HR specialists learn from employees' praises and complaints about their workplaces?"
+  ]
+}

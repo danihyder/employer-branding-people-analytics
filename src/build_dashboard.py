@@ -1,0 +1,711 @@
+"""Build the self-contained results dashboard from results/published_results.json.
+
+The output is a single HTML file with no external requests. The topic map, the word
+networks and the covariate panels are all drawn as inline SVG from the embedded JSON, so
+the page works offline and from a file:// path.
+
+Usage:
+    python src/build_dashboard.py
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+TEMPLATE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Analytics for Employer Branding</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --fg:#1c2430; --muted:#5b6675; --line:#e4e8ee;
+  --chip:#eef1f5; --chipOn:#1c2430; --chipOnFg:#fff; --accent:#2a78d6; --grid:#e1e0d9;
+  --t1:#2a78d6; --t2:#eb6834; --t3:#1baf7a; --t4:#eda100;
+  --t5:#e87ba4; --t6:#008300; --t7:#4a3aa7; --t8:#e34948;
+  --pro:#1a8a4a; --proLight:#d9efe2; --con:#c8382f; --conLight:#f7dedb;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])){
+    --bg:#11151b; --panel:#1a202a; --fg:#e6ebf2; --muted:#9aa7b8; --line:#2b3543;
+    --chip:#26303d; --chipOn:#e6ebf2; --chipOnFg:#11151b; --accent:#6fa0ff; --grid:#2c3441;
+    --t1:#3987e5; --t2:#d95926; --t3:#199e70; --t4:#c98500;
+    --t5:#d55181; --t6:#008300; --t7:#9085e9; --t8:#e66767;
+    --pro:#2fa862; --proLight:#1d3a2b; --con:#e05c52; --conLight:#3a2320;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f6f7f9; --panel:#fff; --fg:#1c2430; --muted:#5b6675; --line:#e4e8ee;
+  --chip:#eef1f5; --chipOn:#1c2430; --chipOnFg:#fff; --accent:#2a78d6; --grid:#e1e0d9;
+  --t1:#2a78d6; --t2:#eb6834; --t3:#1baf7a; --t4:#eda100;
+  --t5:#e87ba4; --t6:#008300; --t7:#4a3aa7; --t8:#e34948;
+  --pro:#1a8a4a; --proLight:#d9efe2; --con:#c8382f; --conLight:#f7dedb;
+}
+:root[data-theme="dark"]{
+  --bg:#11151b; --panel:#1a202a; --fg:#e6ebf2; --muted:#9aa7b8; --line:#2b3543;
+  --chip:#26303d; --chipOn:#e6ebf2; --chipOnFg:#11151b; --accent:#6fa0ff; --grid:#2c3441;
+  --t1:#3987e5; --t2:#d95926; --t3:#199e70; --t4:#c98500;
+  --t5:#d55181; --t6:#008300; --t7:#9085e9; --t8:#e66767;
+  --pro:#2fa862; --proLight:#1d3a2b; --con:#e05c52; --conLight:#3a2320;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 64px}
+h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em;padding-right:88px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.lead{font-size:14px;line-height:1.6;margin:0 0 14px;max-width:900px}
+.cite{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--muted);margin:0 0 18px;line-height:1.55}
+.cite b{color:var(--fg);font-weight:600}
+.cite a{color:var(--accent)}
+.oa{display:inline-block;background:var(--proLight);color:var(--pro);border-radius:5px;
+  padding:1px 7px;font-size:11px;font-weight:600;margin-left:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpi{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 30px 12px 14px}
+.kpi .v{font-size:24px;font-weight:650;letter-spacing:-.015em}
+.kpi .k{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .info{position:absolute;top:9px;right:10px;width:16px;height:16px;border-radius:50%;
+  background:var(--chip);color:var(--muted);font-size:11px;font-weight:600;display:flex;
+  align-items:center;justify-content:center;cursor:help;user-select:none}
+.kpi .info:hover{background:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.grid,.grid3{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.card.full{grid-column:1/-1}
+.card h3{margin:0 0 2px;font-size:15px}
+.card .cap{color:var(--muted);font-size:12px;margin:0 0 12px;line-height:1.5}
+.scroll{overflow-x:auto}
+svg{width:100%;height:auto;display:block;overflow:visible}
+.tick{fill:var(--muted);font-size:10.5px}
+.axline{stroke:var(--grid);stroke-width:1}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{cursor:pointer;font-size:12px;padding:4px 11px;border-radius:16px;background:var(--chip);color:var(--muted)}
+.tab.on{background:var(--chipOn);color:var(--chipOnFg)}
+.tab.pro.on{background:var(--pro);color:#fff}
+.tab.con.on{background:var(--con);color:#fff}
+.note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+.detail{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:0 0 10px}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0}
+.words{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.word{font-size:11.5px;background:var(--chip);border-radius:12px;padding:2px 9px;color:var(--fg)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:12px;
+  padding:2px 9px;background:var(--chip);color:var(--fg)}
+.badge.up{background:var(--conLight);color:var(--con)}
+.badge.down{background:var(--proLight);color:var(--pro)}
+.rowlist{display:flex;flex-direction:column;gap:6px}
+.rowitem{display:flex;align-items:center;gap:9px;font-size:12.5px;cursor:pointer;
+  border-radius:8px;padding:4px 6px;border:1px solid transparent}
+.rowitem:hover{background:var(--chip)}
+.rowitem.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
+.rowitem.off{opacity:.35}
+.swatch{width:10px;height:10px;border-radius:3px;flex:none;background:var(--c)}
+.rowitem .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowitem .pc{color:var(--muted);font-variant-numeric:tabular-nums}
+.flow{display:flex;flex-wrap:wrap;gap:8px}
+.step{flex:1 1 150px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;background:var(--bg)}
+.step b{display:block;font-size:12px;margin-bottom:3px}
+.step span{color:var(--muted);font-size:11.5px;line-height:1.45;display:block}
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--fg);color:var(--bg);
+  font-size:11.5px;line-height:1.45;padding:7px 9px;border-radius:8px;z-index:60;max-width:250px;
+  box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.themeToggle{position:fixed;top:10px;right:12px;z-index:10;cursor:pointer;background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--muted)}
+.foot{margin-top:26px;font-size:11.5px;color:var(--muted);line-height:1.6}
+.reset{cursor:pointer;background:transparent;color:var(--accent);border:1px solid var(--line);
+  border-radius:8px;padding:5px 11px;font:inherit;font-size:12px}
+.hint{font-size:11.5px;color:var(--muted)}
+.ratebar{height:8px;border-radius:5px;overflow:hidden;
+  background:linear-gradient(90deg,var(--con),var(--chip),var(--pro))}
+.ratehead{font-size:12.5px;font-weight:600;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="themeToggle" id="themeToggle">&#9686; theme</div>
+<div id="tip"></div>
+<div class="wrap">
+  <h1>People analytics for employer branding</h1>
+  <p class="sub" id="subline"></p>
+  <p class="lead">Employees write about their employer on public review sites, and what they
+  write becomes a signal that job seekers read. This dashboard shows the eight themes the study
+  found in __N__ IT employee reviews, the word pairs employees used to praise and to criticise,
+  and how the themes differ by employment status, year and star rating.</p>
+
+  <p class="cite"><b>__TITLE__</b><span class="oa">Open access &middot; CC BY 4.0</span><br>
+  <i>__JOURNAL__</i>, __VOL__(__ISSUE__), __PAGES__, __YEAR__.
+  DOI <a href="https://doi.org/__DOI__">__DOI__</a><br>
+  This page presents the results of that published study. The reviews themselves are not
+  shared, and employers are shown as Company A to Company K.</p>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card full">
+      <h3>The eight themes employees write about</h3>
+      <p class="cap">Every block is one theme, sized by how much of the review corpus it accounts
+      for. Select a theme to follow it through the rest of the page.</p>
+      <div id="topicMap"></div>
+      <p class="hint" id="mapHint"></p>
+    </div>
+
+    <div class="card">
+      <h3 id="detailTitle">Theme detail</h3>
+      <p class="cap">The words the model attached to this theme, and what the study says about it.</p>
+      <div id="detail"></div>
+    </div>
+
+    <div class="card">
+      <h3>Where this theme shows up</h3>
+      <p class="cap">How the theme moves with employment status, with time, and with the star
+      rating attached to the review.</p>
+      <div id="signals"></div>
+    </div>
+
+    <div class="card full">
+      <h3>What employees actually said</h3>
+      <p class="cap">Word pairs from the review text, drawn as a network. Two words joined by a
+      line were used next to each other; the heavier the line, the more often. Hover any word to
+      isolate its pairs.</p>
+      <div class="tabs" id="netTabs"></div>
+      <div id="network"></div>
+      <p class="note" id="netNote"></p>
+    </div>
+
+    <div class="card">
+      <h3>Current against former employees</h3>
+      <p class="cap">Which themes each group writes about more.</p>
+      <div id="statusPanel"></div>
+    </div>
+
+    <div class="card">
+      <h3>What changed, 2012 to 2020</h3>
+      <p class="cap">The direction each theme moved across the period.</p>
+      <div id="trendPanel"></div>
+    </div>
+
+    <div class="card full">
+      <h3>Themes against the star rating</h3>
+      <p class="cap">Themes tied to one-star reviews sit on the left, those tied to five-star
+      reviews on the right, and the one theme spread evenly sits in the middle.</p>
+      <div id="ratingPanel"></div>
+    </div>
+
+    <div class="card full">
+      <h3>How the analysis works</h3>
+      <p class="cap">Each step is implemented in this repository and can be run on the sample data
+      included with the code.</p>
+      <div class="flow" id="flow"></div>
+    </div>
+  </div>
+
+  <p class="foot">__NRAW__ reviews were collected from a public career platform covering
+  __COMPANIES__ Fortune 500 US IT employers, and __N__ of them met the criteria for analysis after
+  duplicates and empty reviews were removed. Review text, employer names and reviewer details are
+  not published.</p>
+</div>
+<script id="payload" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('payload').textContent);
+const TC = ['var(--t1)','var(--t2)','var(--t3)','var(--t4)','var(--t5)','var(--t6)','var(--t7)','var(--t8)'];
+const tip = document.getElementById('tip');
+const fmt = n => n.toLocaleString('en-US');
+const TOPICS = D.topics;
+const colourOf = label => TC[TOPICS.findIndex(t => t.label === label) % TC.length];
+
+const state = {selected: null, net: D.bigram_networks[0].id, hover: null};
+
+/* ---------- tooltip ---------- */
+function place(html, x, y){
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  tip.style.left = Math.min(Math.max(8, x), innerWidth - r.width - 8) + 'px';
+  tip.style.top = Math.max(8, y + r.height > innerHeight - 8 ? y - r.height - 26 : y) + 'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+function hoverable(el, html){
+  el.addEventListener('mousemove', e => place(html, e.clientX + 14, e.clientY + 14));
+  el.addEventListener('mouseleave', hideTip);
+}
+function anchoredTip(el, html){
+  const show = () => {
+    tip.innerHTML = html; tip.style.opacity = 1;
+    const b = el.getBoundingClientRect(), r = tip.getBoundingClientRect();
+    place(html, b.left + b.width / 2 - r.width / 2, b.bottom + 8);
+  };
+  el.addEventListener('mouseenter', show);
+  el.addEventListener('focus', show);
+  el.addEventListener('mouseleave', hideTip);
+  el.addEventListener('blur', hideTip);
+}
+const svgEl = (tag, attrs) => {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+};
+
+/* ---------- KPIs ---------- */
+function renderKpis(){
+  const c = D.corpus;
+  const items = [
+    ['Reviews analysed', fmt(c.reviews_analysed),
+     'Reviews left after duplicates and empty reviews were removed from the ' + fmt(c.reviews_parsed) + ' collected.'],
+    ['Employers', String(c.companies),
+     'Fortune 500 ranked IT companies in the United States.'],
+    ['Themes', String(D.topics.length),
+     'Topics identified by the structural topic model and labelled by the author.'],
+    ['Period', c.period, 'Review dates covered by the corpus.'],
+    ['Top complaint', 'Job security',
+     'The most frequently criticised aspect across the corpus, mentioned 99 times by current employees.'],
+    ['Most valued', 'Work-life balance',
+     'Work-life balance and competitive compensation were the most positively associated factors.']
+  ];
+  document.getElementById('kpis').innerHTML = items.map(([k, v]) =>
+    `<div class="kpi"><div class="v">${v}</div><div class="k">${k}</div>
+     <div class="info" tabindex="0" role="button" aria-label="About ${k}">?</div></div>`).join('');
+  document.querySelectorAll('.kpi .info').forEach((el, i) => anchoredTip(el, items[i][2]));
+}
+
+/* ---------- topic map: a squarified treemap ---------- */
+function squarify(items, x, y, w, h){
+  // Standard squarified treemap: lay rows along the shorter side, keeping blocks
+  // close to square so the smaller themes stay readable.
+  const out = [];
+  let rest = items.slice();
+  let rx = x, ry = y, rw = w, rh = h;
+  const total = rest.reduce((s, i) => s + i.value, 0);
+  let scale = (rw * rh) / total;
+
+  const worst = (row, side) => {
+    const sum = row.reduce((s, i) => s + i.value, 0) * scale;
+    const mx = Math.max(...row.map(i => i.value)) * scale;
+    const mn = Math.min(...row.map(i => i.value)) * scale;
+    return Math.max((side * side * mx) / (sum * sum), (sum * sum) / (side * side * mn));
+  };
+
+  while (rest.length){
+    const vertical = rw >= rh;
+    const side = vertical ? rh : rw;
+    let row = [rest[0]];
+    let i = 1;
+    while (i < rest.length && worst(row.concat(rest[i]), side) <= worst(row, side)){
+      row.push(rest[i]); i++;
+    }
+    const rowSum = row.reduce((s, it) => s + it.value, 0) * scale;
+    const thickness = rowSum / side;
+    let offset = 0;
+    row.forEach(it => {
+      const length = (it.value * scale) / thickness;
+      out.push(vertical
+        ? {item: it, x: rx, y: ry + offset, w: thickness, h: length}
+        : {item: it, x: rx + offset, y: ry, w: length, h: thickness});
+      offset += length;
+    });
+    if (vertical){ rx += thickness; rw -= thickness; } else { ry += thickness; rh -= thickness; }
+    rest = rest.slice(row.length);
+  }
+  return out;
+}
+
+function wrapLabel(text, maxWidth, fontSize){
+  // Approximate character width for the UI sans at this size. Good enough to keep a
+  // label inside its block without measuring every glyph.
+  const perChar = fontSize * 0.55;
+  const maxChars = Math.max(6, Math.floor(maxWidth / perChar));
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  words.forEach(w => {
+    const candidate = line ? line + ' ' + w : w;
+    if (candidate.length <= maxChars) { line = candidate; }
+    else { if (line) lines.push(line); line = w; }
+  });
+  if (line) lines.push(line);
+  if (lines.length > 2){
+    const kept = lines.slice(0, 2);
+    kept[1] = kept[1].slice(0, Math.max(1, maxChars - 1)) + '.';
+    return kept;
+  }
+  return lines;
+}
+
+function renderTopicMap(){
+  const host = document.getElementById('topicMap');
+  host.innerHTML = '';
+  const W = 980, H = 330, pad = 3;
+  const items = TOPICS.map((t, i) => ({...t, value: t.proportion_pct, idx: i}));
+  const boxes = squarify(items, 0, 0, W, H);
+
+  const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img',
+    'aria-label': 'Themes sized by their share of the review corpus'});
+  boxes.forEach(b => {
+    const t = b.item;
+    const on = !state.selected || state.selected === t.label;
+    const g = svgEl('g', {style: 'cursor:pointer'});
+    const rect = svgEl('rect', {x: b.x + pad / 2, y: b.y + pad / 2,
+      width: Math.max(b.w - pad, 1), height: Math.max(b.h - pad, 1), rx: 8,
+      fill: TC[t.idx % TC.length], 'fill-opacity': on ? 0.92 : 0.25});
+    g.appendChild(rect);
+
+    const wide = b.w > 118, tall = b.h > 60;
+    if (wide && tall){
+      const size = b.w > 230 ? 14 : 12;
+      // Wrap the label to the tile width so a long name never spills past its block.
+      const lines = wrapLabel(t.label, b.w - 22, size);
+      lines.forEach((line, li) => {
+        const label = svgEl('text', {x: b.x + 12, y: b.y + 24 + li * (size + 3), fill: '#fff',
+          'font-size': size, 'font-weight': 600, opacity: on ? 1 : 0.5});
+        label.textContent = line;
+        g.appendChild(label);
+      });
+      const pct = svgEl('text', {x: b.x + 12, y: b.y + 24 + lines.length * (size + 3) + 14,
+        fill: '#fff', 'font-size': b.w > 230 ? 19 : 15, 'font-weight': 700,
+        opacity: on ? 0.95 : 0.45});
+      pct.textContent = t.proportion_pct + '%';
+      g.appendChild(pct);
+    } else {
+      const pct = svgEl('text', {x: b.x + b.w / 2, y: b.y + b.h / 2 + 5, fill: '#fff',
+        'font-size': 13, 'font-weight': 700, 'text-anchor': 'middle', opacity: on ? 0.95 : 0.45});
+      pct.textContent = t.proportion_pct + '%';
+      g.appendChild(pct);
+    }
+    hoverable(g, `<b>${t.label}</b><br>${t.proportion_pct}% of the corpus<br>${t.summary}`);
+    g.addEventListener('click', () => {
+      state.selected = state.selected === t.label ? null : t.label;
+      render();
+    });
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+  document.getElementById('mapHint').textContent = state.selected
+    ? `Showing ${state.selected}. Select it again to clear.`
+    : 'Select a theme to follow it through the page.';
+}
+
+/* ---------- theme detail ---------- */
+function renderDetail(){
+  const t = TOPICS.find(x => x.label === state.selected);
+  document.getElementById('detailTitle').textContent = t ? t.label : 'Theme detail';
+  const host = document.getElementById('detail');
+  if (!t){
+    host.innerHTML = `<p class="hint">Select a theme in the map above to see its words and
+      what the study reports about it.</p>`;
+    return;
+  }
+  host.innerHTML = `
+    <dl class="detail">
+      <dt>Share of corpus</dt><dd><b>${t.proportion_pct}%</b></dd>
+      <dt>EVP dimension</dt><dd>${t.evp_mapping}</dd>
+      <dt>Topic number</dt><dd>${t.id} of 8</dd>
+    </dl>
+    <p style="margin:0 0 8px;font-size:12.5px">${t.summary}</p>
+    <div class="hint">Top words</div>
+    <div class="words">${t.top_words.map(w => `<span class="word">${w}</span>`).join('')}</div>`;
+}
+
+/* ---------- signal badges for the selected theme ---------- */
+function renderSignals(){
+  const host = document.getElementById('signals');
+  const t = TOPICS.find(x => x.label === state.selected);
+  if (!t){
+    host.innerHTML = `<p class="hint">Select a theme to see whether it leans towards current or
+      former employees, which way it moved between 2012 and 2020, and whether it travels with
+      high or low ratings.</p>`;
+    return;
+  }
+  const trend = {increased: ['up', 'rose across the period'],
+                 declined: ['down', 'fell across the period'],
+                 unchanged: ['', 'held steady across the period'],
+                 'not stated': ['', 'direction not reported']}[t.trend_2012_2020];
+  const rating = {low: ['up', 'travels with one-star reviews'],
+                  high: ['down', 'travels with five-star reviews'],
+                  even: ['', 'spread evenly across ratings']}[t.rating_association];
+  host.innerHTML = `
+    <dl class="detail">
+      <dt>Written about more by</dt>
+      <dd><span class="badge">${t.status_lean === 'current' ? 'Current employees' : 'Former employees'}</span></dd>
+      <dt>2012 to 2020</dt><dd><span class="badge ${trend[0]}">${trend[1]}</span></dd>
+      <dt>Star rating</dt><dd><span class="badge ${rating[0]}">${rating[1]}</span></dd>
+    </dl>
+    <p class="note" style="margin-top:2px">These three readings come from the study's covariate
+    analysis, which compares how much each theme is discussed across employment status, year and
+    rating.</p>`;
+}
+
+/* ---------- word network ---------- */
+function layout(nodes, edges, W, H, seed){
+  // Deterministic spring layout. Nodes repel, linked nodes attract, and a fixed seed
+  // means the network settles the same way on every load.
+  let s = seed;
+  const rand = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pos = {};
+  nodes.forEach((n, i) => {
+    const a = (i / nodes.length) * Math.PI * 2;
+    pos[n] = {x: W / 2 + Math.cos(a) * W * 0.28 + (rand() - 0.5) * 30,
+              y: H / 2 + Math.sin(a) * H * 0.32 + (rand() - 0.5) * 30};
+  });
+  const degree = {};
+  nodes.forEach(n => degree[n] = 0);
+  edges.forEach(e => { degree[e.a]++; degree[e.b]++; });
+
+  for (let it = 0; it < 320; it++){
+    const k = 1 - it / 320;
+    const force = {};
+    nodes.forEach(n => force[n] = {x: 0, y: 0});
+    for (let i = 0; i < nodes.length; i++){
+      for (let j = i + 1; j < nodes.length; j++){
+        const a = pos[nodes[i]], b = pos[nodes[j]];
+        let dx = a.x - b.x, dy = a.y - b.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < 1) { dx = rand() - 0.5; dy = rand() - 0.5; d2 = 1; }
+        const rep = 5200 / d2;
+        force[nodes[i]].x += dx * rep; force[nodes[i]].y += dy * rep;
+        force[nodes[j]].x -= dx * rep; force[nodes[j]].y -= dy * rep;
+      }
+    }
+    edges.forEach(e => {
+      const a = pos[e.a], b = pos[e.b];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+      const pull = (d - 88) * 0.016 * (0.6 + e.weight / 5);
+      force[e.a].x += (dx / d) * pull * d * 0.05;
+      force[e.a].y += (dy / d) * pull * d * 0.05;
+      force[e.b].x -= (dx / d) * pull * d * 0.05;
+      force[e.b].y -= (dy / d) * pull * d * 0.05;
+    });
+    nodes.forEach(n => {
+      pos[n].x += Math.max(-14, Math.min(14, force[n].x)) * k;
+      pos[n].y += Math.max(-14, Math.min(14, force[n].y)) * k;
+      pos[n].x += (W / 2 - pos[n].x) * 0.004;
+      pos[n].y += (H / 2 - pos[n].y) * 0.004;
+    });
+  }
+  const xs = nodes.map(n => pos[n].x), ys = nodes.map(n => pos[n].y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const m = 58;
+  nodes.forEach(n => {
+    pos[n].x = m + ((pos[n].x - minX) / Math.max(maxX - minX, 1)) * (W - 2 * m);
+    pos[n].y = m * 0.7 + ((pos[n].y - minY) / Math.max(maxY - minY, 1)) * (H - 1.4 * m * 0.7 - 10);
+  });
+  return pos;
+}
+
+function renderNetTabs(){
+  const host = document.getElementById('netTabs');
+  host.innerHTML = D.bigram_networks.map(n =>
+    `<span class="tab ${n.sentiment} ${state.net === n.id ? 'on' : ''}" data-net="${n.id}">
+      ${n.sentiment === 'pros' ? 'Praise' : 'Complaints'} &middot; ${n.status}</span>`).join('');
+  host.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => { state.net = t.dataset.net; state.hover = null; render(); };
+  });
+}
+
+function renderNetwork(){
+  const net = D.bigram_networks.find(n => n.id === state.net);
+  const host = document.getElementById('network');
+  host.innerHTML = '';
+  const W = 980, H = 430;
+  const nodes = [...new Set(net.edges.flatMap(e => [e.a, e.b]))];
+  const pos = layout(nodes, net.edges, W, H, 7);
+  const isPro = net.sentiment === 'pros';
+  const stroke = isPro ? 'var(--pro)' : 'var(--con)';
+
+  const degree = {};
+  nodes.forEach(n => degree[n] = 0);
+  net.edges.forEach(e => { degree[e.a]++; degree[e.b]++; });
+
+  const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img',
+    'aria-label': `Word pairs used by ${net.status.toLowerCase()} in ${isPro ? 'praise' : 'complaints'}`});
+
+  net.edges.forEach(e => {
+    const a = pos[e.a], b = pos[e.b];
+    const active = !state.hover || state.hover === e.a || state.hover === e.b;
+    const line = svgEl('line', {x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+      stroke: stroke, 'stroke-width': 1.5 + e.weight * 2.1,
+      'stroke-linecap': 'round',
+      'stroke-opacity': active ? (0.22 + e.weight * 0.15) : 0.06});
+    const reported = (net.reported_counts || []).find(r =>
+      r.pair === `${e.a} ${e.b}` || r.pair === `${e.b} ${e.a}`);
+    hoverable(line, `<b>${e.a} ${e.b}</b><br>` +
+      (reported ? `${reported.qualifier} ${reported.count} mentions` : `band ${e.weight} of 5`) +
+      `<br>${net.status}, ${isPro ? 'praise' : 'complaints'}`);
+    svg.appendChild(line);
+  });
+
+  nodes.forEach(n => {
+    const p = pos[n];
+    const active = !state.hover || state.hover === n ||
+      net.edges.some(e => (e.a === n && e.b === state.hover) || (e.b === n && e.a === state.hover));
+    const r = 5 + Math.min(degree[n], 5) * 1.5;
+    const g = svgEl('g', {style: 'cursor:pointer', opacity: active ? 1 : 0.22});
+    const c = svgEl('circle', {cx: p.x, cy: p.y, r: r, fill: 'var(--fg)'});
+    g.appendChild(c);
+    const label = svgEl('text', {x: p.x, y: p.y - r - 6, 'text-anchor': 'middle',
+      'font-size': 12.5, fill: 'var(--fg)', 'font-weight': state.hover === n ? 700 : 500});
+    label.textContent = n;
+    g.appendChild(label);
+    g.addEventListener('mouseenter', () => { state.hover = n; renderNetwork(); });
+    g.addEventListener('mouseleave', () => { state.hover = null; renderNetwork(); });
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+  document.getElementById('netNote').textContent = net.headline +
+    ' The study publishes its bigram results as network figures with a banded line scale, so line'
+    + ' weight here follows that band. Exact counts are shown where the study reports one.';
+}
+
+/* ---------- status panel ---------- */
+function renderStatus(){
+  const f = D.covariate_findings.status;
+  const host = document.getElementById('statusPanel');
+  const col = (title, labels) => `
+    <div>
+      <div class="hint" style="margin-bottom:6px">${title}</div>
+      <div class="rowlist">${labels.map(l => rowItem(l)).join('')}</div>
+    </div>`;
+  host.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    ${col('Current employees', f.current_leaning)}
+    ${col('Former employees', f.former_leaning)}</div>
+    <p class="note">${f.statement}</p>`;
+  wireRows(host);
+}
+
+/* ---------- trend panel ---------- */
+function renderTrend(){
+  const f = D.covariate_findings.time;
+  const host = document.getElementById('trendPanel');
+  const group = (title, labels, arrow) => labels.length ? `
+    <div class="hint" style="margin:8px 0 6px">${arrow} ${title}</div>
+    <div class="rowlist">${labels.map(l => rowItem(l)).join('')}</div>` : '';
+  host.innerHTML =
+    group('Rose', f.increased, '&#9650;') +
+    group('Fell', f.declined, '&#9660;') +
+    group('Held steady', f.unchanged, '&#9644;') +
+    `<p class="note">${f.statement}</p>`;
+  wireRows(host);
+}
+
+/* ---------- rating panel ---------- */
+function renderRating(){
+  const f = D.covariate_findings.rating;
+  const host = document.getElementById('ratingPanel');
+  const col = (title, labels, hint) => `
+    <div>
+      <div class="ratehead">${title}</div>
+      <div class="hint" style="margin-bottom:7px">${hint}</div>
+      <div class="rowlist">${labels.map(l => rowItem(l)).join('')}</div>
+    </div>`;
+  host.innerHTML = `
+    <div class="ratebar"><span></span></div>
+    <div class="grid3" style="gap:16px;margin-top:12px">
+      ${col('One star', f.low_rating, 'themes tied to the lowest ratings')}
+      ${col('Even', f.even, 'spread across every rating')}
+      ${col('Five stars', f.high_rating, 'themes tied to the highest ratings')}
+    </div>
+    <p class="note">${f.statement}</p>`;
+  wireRows(host);
+}
+
+/* ---------- shared row helper ---------- */
+function rowItem(label){
+  const t = TOPICS.find(x => x.label === label);
+  const cls = state.selected === label ? 'sel' : (state.selected ? 'off' : '');
+  return `<div class="rowitem ${cls}" data-topic="${label}" style="--c:${colourOf(label)}">
+    <span class="swatch"></span><span class="nm">${label}</span>
+    <span class="pc">${t ? t.proportion_pct + '%' : ''}</span></div>`;
+}
+function wireRows(host){
+  host.querySelectorAll('.rowitem').forEach(el => {
+    el.onclick = () => {
+      state.selected = state.selected === el.dataset.topic ? null : el.dataset.topic;
+      render();
+    };
+  });
+}
+
+/* ---------- method flow ---------- */
+function renderFlow(){
+  const steps = [
+    ['Collect', 'Public reviews for eleven Fortune 500 US IT employers, with the review text, role, date, rating and employment status.'],
+    ['Clean', 'Tokenise and segment the text, remove stopwords, reduce words to their root form, then drop duplicates and empty reviews.'],
+    ['Bigrams', 'Count word pairs separately for praise and complaints, and for current and former employees, then draw each set as a network.'],
+    ['Choose K', 'Fit topic models from four to ten topics, scoring each on semantic coherence and exclusivity.'],
+    ['Model topics', 'Fit the structural topic model at the chosen number of topics.'],
+    ['Label', 'Read the top words and a sample of reviews for each topic, then assign a label.'],
+    ['Profile', 'Compare how much each topic is discussed across employment status, year and rating.']
+  ];
+  document.getElementById('flow').innerHTML = steps.map(([t, d], i) =>
+    `<div class="step"><b>${i + 1}. ${t}</b><span>${d}</span></div>`).join('');
+}
+
+/* ---------- orchestration ---------- */
+function render(){
+  document.getElementById('subline').textContent =
+    `${fmt(D.corpus.reviews_analysed)} employee reviews from ${D.corpus.companies} IT employers` +
+    (state.selected ? ` · showing ${state.selected}` : '');
+  renderTopicMap();
+  renderDetail();
+  renderSignals();
+  renderNetTabs();
+  renderNetwork();
+  renderStatus();
+  renderTrend();
+  renderRating();
+}
+
+document.getElementById('themeToggle').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : cur === 'light' ? 'dark'
+    : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', next);
+};
+
+renderKpis();
+renderFlow();
+render();
+</script>
+</body>
+</html>
+"""
+
+
+def build(results_path: Path, out_path: Path) -> None:
+    data = json.loads(results_path.read_text())
+    s, c = data["study"], data["corpus"]
+    html = (
+        TEMPLATE
+        .replace("__DATA__", json.dumps(data))
+        .replace("__TITLE__", s["title"])
+        .replace("__JOURNAL__", s["journal"])
+        .replace("__VOL__", s["volume"])
+        .replace("__ISSUE__", s["issue"])
+        .replace("__PAGES__", s["pages"])
+        .replace("__YEAR__", str(s["year"]))
+        .replace("__DOI__", s["doi"])
+        .replace("__NRAW__", f"{c['reviews_parsed']:,}")
+        .replace("__COMPANIES__", str(c["companies"]))
+        .replace("__N__", f"{c['reviews_analysed']:,}")
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(html)
+    print(f"wrote {out_path} ({len(html) / 1024:.0f} KB)")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results", type=Path, default=ROOT / "results" / "published_results.json")
+    parser.add_argument("--out", type=Path, default=ROOT / "dashboard" / "index.html")
+    args = parser.parse_args()
+    build(args.results, args.out)
+
+
+if __name__ == "__main__":
+    main()
