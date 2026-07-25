@@ -8,8 +8,9 @@ What 21,482 IT employees wrote about their employers, and what a text mining stu
 
 ## The study
 
-> "Leveraging People Analytics for Employer Branding: A Text Mining Study of Employee Reviews in IT
-> Industry", *Journal of Chinese Human Resources Management*, 16(2), 97-120, 2025.
+> Mahar, D.H. (2025), "Leveraging People Analytics for Employer Branding: A Text Mining Study of
+> Employee Reviews in IT Industry", *Journal of Chinese Human Resources Management*, 16(2),
+> 97-120.
 > DOI: [10.47297/wspchrmWSP2040-800506.20251602](https://doi.org/10.47297/wspchrmWSP2040-800506.20251602)
 
 This repository presents that study's results and findings in an interactive form. The article

@@ -144,11 +144,9 @@ svg{width:100%;height:auto;display:block;overflow:visible}
   found in __N__ IT employee reviews, the word pairs employees used to praise and to criticise,
   and how the themes differ by employment status, over time, and by star rating.</p>
 
-  <p class="cite"><b>__TITLE__</b><br>
-  <i>__JOURNAL__</i>, __VOL__(__ISSUE__), __PAGES__, __YEAR__.
-  DOI <a href="https://doi.org/__DOI__">__DOI__</a><br>
-  This page presents the results of that published study. The reviews themselves are not
-  shared, and employers are shown as Company A to Company K.</p>
+  <p class="cite">__AUTHORS__ (__YEAR__). <b>__TITLE__</b><br>
+  <i>__JOURNAL__</i>, __VOL__(__ISSUE__), __PAGES__.
+  DOI <a href="https://doi.org/__DOI__">__DOI__</a></p>
 
   <div class="kpis" id="kpis"></div>
 
@@ -728,6 +726,7 @@ def build(results_path: Path, out_path: Path) -> None:
     html = (
         TEMPLATE
         .replace("__DATA__", json.dumps(data))
+        .replace("__AUTHORS__", " and ".join(s["authors"]))
         .replace("__TITLE__", s["title"])
         .replace("__JOURNAL__", s["journal"])
         .replace("__VOL__", s["volume"])
