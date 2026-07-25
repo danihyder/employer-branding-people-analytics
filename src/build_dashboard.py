@@ -64,8 +64,6 @@ h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em;padding-right:88px}
   border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--muted);margin:0 0 18px;line-height:1.55}
 .cite b{color:var(--fg);font-weight:600}
 .cite a{color:var(--accent)}
-.oa{display:inline-block;background:var(--proLight);color:var(--pro);border-radius:5px;
-  padding:1px 7px;font-size:11px;font-weight:600;margin-left:6px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
 .kpi{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 30px 12px 14px}
 .kpi .v{font-size:24px;font-weight:650;letter-spacing:-.015em}
@@ -91,9 +89,6 @@ svg{width:100%;height:auto;display:block;overflow:visible}
 .tab.pro.on{background:var(--pro);color:#fff}
 .tab.con.on{background:var(--con);color:#fff}
 .note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5}
-.detail{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:0 0 10px}
-.detail dt{color:var(--muted)}
-.detail dd{margin:0}
 .words{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
 .word{font-size:11.5px;background:var(--chip);border-radius:12px;padding:2px 9px;color:var(--fg)}
 .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:12px;
@@ -122,9 +117,19 @@ svg{width:100%;height:auto;display:block;overflow:visible}
 .reset{cursor:pointer;background:transparent;color:var(--accent);border:1px solid var(--line);
   border-radius:8px;padding:5px 11px;font:inherit;font-size:12px}
 .hint{font-size:11.5px;color:var(--muted)}
-.ratebar{height:8px;border-radius:5px;overflow:hidden;
-  background:linear-gradient(90deg,var(--con),var(--chip),var(--pro))}
-.ratehead{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.themecards{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px}
+.themecard{border:1px solid var(--line);border-left:3px solid var(--c);border-radius:11px;
+  padding:11px 13px;cursor:pointer;transition:opacity .12s}
+.themecard:hover{background:var(--chip)}
+.themecard.off{opacity:.32}
+.themecard.sel{background:color-mix(in srgb,var(--c) 10%,transparent);border-color:var(--c)}
+.tchead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.tcname{font-size:13.5px;font-weight:600}
+.tcpct{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.tcbar{height:5px;border-radius:3px;background:var(--chip);margin:7px 0 9px;overflow:hidden}
+.tcbar span{display:block;height:100%;border-radius:3px;background:var(--c)}
+.tcbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;padding-top:9px;
+  border-top:1px dashed var(--line)}
 </style>
 </head>
 <body>
@@ -136,9 +141,9 @@ svg{width:100%;height:auto;display:block;overflow:visible}
   <p class="lead">Employees write about their employer on public review sites, and what they
   write becomes a signal that job seekers read. This dashboard shows the eight themes the study
   found in __N__ IT employee reviews, the word pairs employees used to praise and to criticise,
-  and how the themes differ by employment status, year and star rating.</p>
+  and how the themes differ by employment status, over time, and by star rating.</p>
 
-  <p class="cite"><b>__TITLE__</b><span class="oa">Open access &middot; CC BY 4.0</span><br>
+  <p class="cite"><b>__TITLE__</b><br>
   <i>__JOURNAL__</i>, __VOL__(__ISSUE__), __PAGES__, __YEAR__.
   DOI <a href="https://doi.org/__DOI__">__DOI__</a><br>
   This page presents the results of that published study. The reviews themselves are not
@@ -149,23 +154,17 @@ svg{width:100%;height:auto;display:block;overflow:visible}
   <div class="grid">
     <div class="card full">
       <h3>The eight themes employees write about</h3>
-      <p class="cap">Every block is one theme, sized by how much of the review corpus it accounts
-      for. Select a theme to follow it through the rest of the page.</p>
+      <p class="cap">Every block is one theme, sized by its share of the review corpus. Select a
+      theme to follow it through the rest of the page.</p>
       <div id="topicMap"></div>
       <p class="hint" id="mapHint"></p>
     </div>
 
-    <div class="card">
-      <h3 id="detailTitle">Theme detail</h3>
-      <p class="cap">The words the model attached to this theme, and what the study says about it.</p>
-      <div id="detail"></div>
-    </div>
-
-    <div class="card">
-      <h3>Where this theme shows up</h3>
-      <p class="cap">How the theme moves with employment status, with time, and with the star
-      rating attached to the review.</p>
-      <div id="signals"></div>
+    <div class="card full">
+      <h3>What each theme is made of</h3>
+      <p class="cap">The words the model attached to each theme, and how the theme behaves across
+      employment status, over time, and against the star rating.</p>
+      <div class="themecards" id="themeCards"></div>
     </div>
 
     <div class="card full">
@@ -185,30 +184,28 @@ svg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="card">
-      <h3>What changed, 2012 to 2020</h3>
-      <p class="cap">The direction each theme moved across the period.</p>
+      <h3>How the themes moved over time</h3>
+      <p class="cap">The direction each theme travelled across the review period.</p>
       <div id="trendPanel"></div>
     </div>
 
     <div class="card full">
-      <h3>Themes against the star rating</h3>
-      <p class="cap">Themes tied to one-star reviews sit on the left, those tied to five-star
-      reviews on the right, and the one theme spread evenly sits in the middle.</p>
+      <h3>Which themes carry a good review, and which carry a bad one</h3>
+      <p class="cap">Bars run left for themes that travel with one-star reviews and right for those
+      that travel with five-star reviews. Bar length is the theme's share of the corpus.</p>
       <div id="ratingPanel"></div>
     </div>
 
     <div class="card full">
-      <h3>How the analysis works</h3>
-      <p class="cap">Each step is implemented in this repository and can be run on the sample data
-      included with the code.</p>
+      <h3>How the study did it</h3>
+      <p class="cap">The steps behind the results on this page.</p>
       <div class="flow" id="flow"></div>
     </div>
   </div>
 
-  <p class="foot">__NRAW__ reviews were collected from a public career platform covering
-  __COMPANIES__ Fortune 500 US IT employers, and __N__ of them met the criteria for analysis after
-  duplicates and empty reviews were removed. Review text, employer names and reviewer details are
-  not published.</p>
+  <p class="foot">__NRAW__ reviews were collected from a public career platform covering Fortune
+  500 US IT employers, and __N__ of them met the criteria for analysis after duplicates and empty
+  reviews were removed. Review text, employer names and reviewer details are not published.</p>
 </div>
 <script id="payload" type="application/json">__DATA__</script>
 <script>
@@ -257,11 +254,8 @@ function renderKpis(){
   const items = [
     ['Reviews analysed', fmt(c.reviews_analysed),
      'Reviews left after duplicates and empty reviews were removed from the ' + fmt(c.reviews_parsed) + ' collected.'],
-    ['Employers', String(c.companies),
-     'Fortune 500 ranked IT companies in the United States.'],
     ['Themes', String(D.topics.length),
      'Topics identified by the structural topic model and labelled by the author.'],
-    ['Period', c.period, 'Review dates covered by the corpus.'],
     ['Top complaint', 'Job security',
      'The most frequently criticised aspect across the corpus, mentioned 99 times by current employees.'],
     ['Most valued', 'Work-life balance',
@@ -389,54 +383,39 @@ function renderTopicMap(){
     : 'Select a theme to follow it through the page.';
 }
 
-/* ---------- theme detail ---------- */
-function renderDetail(){
-  const t = TOPICS.find(x => x.label === state.selected);
-  document.getElementById('detailTitle').textContent = t ? t.label : 'Theme detail';
-  const host = document.getElementById('detail');
-  if (!t){
-    host.innerHTML = `<p class="hint">Select a theme in the map above to see its words and
-      what the study reports about it.</p>`;
-    return;
-  }
-  host.innerHTML = `
-    <dl class="detail">
-      <dt>Share of corpus</dt><dd><b>${t.proportion_pct}%</b></dd>
-      <dt>EVP dimension</dt><dd>${t.evp_mapping}</dd>
-      <dt>Topic number</dt><dd>${t.id} of 8</dd>
-    </dl>
-    <p style="margin:0 0 8px;font-size:12.5px">${t.summary}</p>
-    <div class="hint">Top words</div>
-    <div class="words">${t.top_words.map(w => `<span class="word">${w}</span>`).join('')}</div>`;
-}
+/* ---------- theme cards ---------- */
+const TREND_TEXT = {increased: ['up', 'rose over time'], declined: ['down', 'fell over time'],
+                    unchanged: ['', 'held steady'], 'not stated': ['', 'direction not reported']};
+const RATING_TEXT = {low: ['up', 'one-star reviews'], high: ['down', 'five-star reviews'],
+                     even: ['', 'every rating equally']};
 
-/* ---------- signal badges for the selected theme ---------- */
-function renderSignals(){
-  const host = document.getElementById('signals');
-  const t = TOPICS.find(x => x.label === state.selected);
-  if (!t){
-    host.innerHTML = `<p class="hint">Select a theme to see whether it leans towards current or
-      former employees, which way it moved between 2012 and 2020, and whether it travels with
-      high or low ratings.</p>`;
-    return;
-  }
-  const trend = {increased: ['up', 'rose across the period'],
-                 declined: ['down', 'fell across the period'],
-                 unchanged: ['', 'held steady across the period'],
-                 'not stated': ['', 'direction not reported']}[t.trend_2012_2020];
-  const rating = {low: ['up', 'travels with one-star reviews'],
-                  high: ['down', 'travels with five-star reviews'],
-                  even: ['', 'spread evenly across ratings']}[t.rating_association];
-  host.innerHTML = `
-    <dl class="detail">
-      <dt>Written about more by</dt>
-      <dd><span class="badge">${t.status_lean === 'current' ? 'Current employees' : 'Former employees'}</span></dd>
-      <dt>2012 to 2020</dt><dd><span class="badge ${trend[0]}">${trend[1]}</span></dd>
-      <dt>Star rating</dt><dd><span class="badge ${rating[0]}">${rating[1]}</span></dd>
-    </dl>
-    <p class="note" style="margin-top:2px">These three readings come from the study's covariate
-    analysis, which compares how much each theme is discussed across employment status, year and
-    rating.</p>`;
+function renderThemeCards(){
+  const host = document.getElementById('themeCards');
+  host.innerHTML = TOPICS.map((t, i) => {
+    const on = !state.selected || state.selected === t.label;
+    const trend = TREND_TEXT[t.trend_direction];
+    const rating = RATING_TEXT[t.rating_association];
+    return `<div class="themecard ${on ? '' : 'off'} ${state.selected === t.label ? 'sel' : ''}"
+      data-topic="${t.label}" style="--c:${TC[i % TC.length]}">
+      <div class="tchead">
+        <span class="tcname">${t.label}</span>
+        <span class="tcpct">${t.proportion_pct}%</span>
+      </div>
+      <div class="tcbar"><span style="width:${(t.proportion_pct / 23) * 100}%"></span></div>
+      <div class="words">${t.top_words.slice(0, 7).map(w => `<span class="word">${w}</span>`).join('')}</div>
+      <div class="tcbadges">
+        <span class="badge">${t.status_lean === 'current' ? 'Current employees' : 'Former employees'}</span>
+        ${t.trend_direction === 'not stated' ? '' : `<span class="badge ${trend[0]}">${trend[1]}</span>`}
+        <span class="badge ${rating[0]}">${rating[1]}</span>
+      </div>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('.themecard').forEach(el => {
+    el.onclick = () => {
+      state.selected = state.selected === el.dataset.topic ? null : el.dataset.topic;
+      render();
+    };
+  });
 }
 
 /* ---------- word network ---------- */
@@ -557,9 +536,7 @@ function renderNetwork(){
     svg.appendChild(g);
   });
   host.appendChild(svg);
-  document.getElementById('netNote').textContent = net.headline +
-    ' The study publishes its bigram results as network figures with a banded line scale, so line'
-    + ' weight here follows that band. Exact counts are shown where the study reports one.';
+  document.getElementById('netNote').textContent = net.headline;
 }
 
 /* ---------- status panel ---------- */
@@ -578,40 +555,108 @@ function renderStatus(){
   wireRows(host);
 }
 
-/* ---------- trend panel ---------- */
+/* ---------- trend panel: direction over the review period ---------- */
 function renderTrend(){
   const f = D.covariate_findings.time;
   const host = document.getElementById('trendPanel');
-  const group = (title, labels, arrow) => labels.length ? `
-    <div class="hint" style="margin:8px 0 6px">${arrow} ${title}</div>
-    <div class="rowlist">${labels.map(l => rowItem(l)).join('')}</div>` : '';
-  host.innerHTML =
-    group('Rose', f.increased, '&#9650;') +
-    group('Fell', f.declined, '&#9660;') +
-    group('Held steady', f.unchanged, '&#9644;') +
-    `<p class="note">${f.statement}</p>`;
-  wireRows(host);
+  host.innerHTML = '';
+  const moving = TOPICS.filter(t => t.trend_direction !== 'not stated');
+  const W = 640, H = 44 + moving.length * 44, padL = 232, padR = 116;
+  const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img',
+    'aria-label': 'Direction each theme moved across the review period'});
+
+  const x0 = padL, x1 = W - padR;
+  svg.appendChild(svgEl('line', {x1: x0, x2: x1, y1: H - 14, y2: H - 14, class: 'axline'}));
+  [['earlier reviews', x0, 'start'], ['later reviews', x1, 'end']].forEach(([txt, x, anchor]) => {
+    const lab = svgEl('text', {x: x, y: H - 2, class: 'tick', 'text-anchor': anchor});
+    lab.textContent = txt;
+    svg.appendChild(lab);
+  });
+
+  moving.forEach((t, i) => {
+    const on = !state.selected || state.selected === t.label;
+    const y = 22 + i * 44;
+    const shift = t.trend_direction === 'increased' ? -11
+                : t.trend_direction === 'declined' ? 11 : 0;
+    const g = svgEl('g', {style: 'cursor:pointer', opacity: on ? 1 : 0.25});
+    const name = svgEl('text', {x: padL - 12, y: y + 4, class: 'rowlab', 'text-anchor': 'end'});
+    name.textContent = t.label;
+    g.appendChild(name);
+    g.appendChild(svgEl('line', {x1: x0, y1: y + shift * -1, x2: x1, y2: y + shift,
+      stroke: colourOf(t.label), 'stroke-width': 2.6, 'stroke-linecap': 'round'}));
+    g.appendChild(svgEl('circle', {cx: x0, cy: y + shift * -1, r: 4, fill: colourOf(t.label)}));
+    g.appendChild(svgEl('circle', {cx: x1, cy: y + shift, r: 4.5, fill: colourOf(t.label)}));
+    const dir = svgEl('text', {x: x1 + 10, y: y + shift + 4, class: 'tick',
+      fill: 'var(--muted)', 'text-anchor': 'start'});
+    dir.textContent = TREND_TEXT[t.trend_direction][1];
+    g.appendChild(dir);
+    hoverable(g, `<b>${t.label}</b><br>${TREND_TEXT[t.trend_direction][1]}<br>${t.proportion_pct}% of the corpus`);
+    g.addEventListener('click', () => {
+      state.selected = state.selected === t.label ? null : t.label; render();
+    });
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+  const note = document.createElement('p');
+  note.className = 'note';
+  note.textContent = f.statement + ' Lines show the direction of change, not its size.';
+  host.appendChild(note);
 }
 
-/* ---------- rating panel ---------- */
+/* ---------- rating panel: diverging by rating pull ---------- */
 function renderRating(){
   const f = D.covariate_findings.rating;
   const host = document.getElementById('ratingPanel');
-  const col = (title, labels, hint) => `
-    <div>
-      <div class="ratehead">${title}</div>
-      <div class="hint" style="margin-bottom:7px">${hint}</div>
-      <div class="rowlist">${labels.map(l => rowItem(l)).join('')}</div>
-    </div>`;
-  host.innerHTML = `
-    <div class="ratebar"><span></span></div>
-    <div class="grid3" style="gap:16px;margin-top:12px">
-      ${col('One star', f.low_rating, 'themes tied to the lowest ratings')}
-      ${col('Even', f.even, 'spread across every rating')}
-      ${col('Five stars', f.high_rating, 'themes tied to the highest ratings')}
-    </div>
-    <p class="note">${f.statement}</p>`;
-  wireRows(host);
+  host.innerHTML = '';
+  const ordered = [...TOPICS].sort((a, b) => {
+    const rank = x => x.rating_association === 'low' ? 0 : x.rating_association === 'even' ? 1 : 2;
+    return rank(a) - rank(b) || b.proportion_pct - a.proportion_pct;
+  });
+  const W = 980, rowH = 34, padT = 30, H = padT + ordered.length * rowH + 26;
+  const mid = W / 2, maxBar = 240, maxPct = 23;
+  const svg = svgEl('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img',
+    'aria-label': 'Themes by the rating they travel with, sized by share of the corpus'});
+
+  ['One star', 'Five stars'].forEach((txt, i) => {
+    const x = i === 0 ? mid - maxBar - 10 : mid + maxBar + 10;
+    const lab = svgEl('text', {x: x, y: 14, class: 'tick', 'text-anchor': i === 0 ? 'start' : 'end',
+      'font-weight': 600});
+    lab.textContent = txt;
+    svg.appendChild(lab);
+  });
+  svg.appendChild(svgEl('line', {x1: mid, x2: mid, y1: padT - 14, y2: H - 20, class: 'axline'}));
+
+  ordered.forEach((t, i) => {
+    const on = !state.selected || state.selected === t.label;
+    const y = padT + i * rowH;
+    const len = (t.proportion_pct / maxPct) * maxBar;
+    const g = svgEl('g', {style: 'cursor:pointer', opacity: on ? 1 : 0.25});
+    if (t.rating_association === 'even'){
+      g.appendChild(svgEl('rect', {x: mid - len / 2, y: y, width: len, height: 15, rx: 4,
+        fill: colourOf(t.label), 'fill-opacity': 0.55}));
+    } else {
+      const low = t.rating_association === 'low';
+      g.appendChild(svgEl('rect', {x: low ? mid - len : mid, y: y, width: len, height: 15, rx: 4,
+        fill: colourOf(t.label)}));
+    }
+    const anchorLeft = t.rating_association === 'low';
+    const lab = svgEl('text', {
+      x: t.rating_association === 'even' ? mid + len / 2 + 9 : (anchorLeft ? mid - len - 9 : mid + len + 9),
+      y: y + 12, class: 'rowlab', 'text-anchor': anchorLeft ? 'end' : 'start'});
+    lab.textContent = `${t.label}  ${t.proportion_pct}%`;
+    g.appendChild(lab);
+    hoverable(g, `<b>${t.label}</b><br>${t.proportion_pct}% of the corpus<br>` +
+      `travels with ${RATING_TEXT[t.rating_association][1]}`);
+    g.addEventListener('click', () => {
+      state.selected = state.selected === t.label ? null : t.label; render();
+    });
+    svg.appendChild(g);
+  });
+  host.appendChild(svg);
+  const note = document.createElement('p');
+  note.className = 'note';
+  note.textContent = f.statement;
+  host.appendChild(note);
 }
 
 /* ---------- shared row helper ---------- */
@@ -634,13 +679,13 @@ function wireRows(host){
 /* ---------- method flow ---------- */
 function renderFlow(){
   const steps = [
-    ['Collect', 'Public reviews for eleven Fortune 500 US IT employers, with the review text, role, date, rating and employment status.'],
+    ['Collect', 'Public reviews for Fortune 500 US IT employers, carrying the review text, role, date, rating and employment status.'],
     ['Clean', 'Tokenise and segment the text, remove stopwords, reduce words to their root form, then drop duplicates and empty reviews.'],
     ['Bigrams', 'Count word pairs separately for praise and complaints, and for current and former employees, then draw each set as a network.'],
-    ['Choose K', 'Fit topic models from four to ten topics, scoring each on semantic coherence and exclusivity.'],
-    ['Model topics', 'Fit the structural topic model at the chosen number of topics.'],
-    ['Label', 'Read the top words and a sample of reviews for each topic, then assign a label.'],
-    ['Profile', 'Compare how much each topic is discussed across employment status, year and rating.']
+    ['Choose the topics', 'Fit models from four to ten topics, scoring each on semantic coherence and exclusivity, and settle on eight.'],
+    ['Model', 'Fit the structural topic model, which lets the metadata attached to each review inform topic prevalence.'],
+    ['Label', "Read each topic's leading words alongside a sample of its reviews, then assign a label."],
+    ['Profile', 'Compare how much each topic is discussed across employment status, time and star rating.']
   ];
   document.getElementById('flow').innerHTML = steps.map(([t, d], i) =>
     `<div class="step"><b>${i + 1}. ${t}</b><span>${d}</span></div>`).join('');
@@ -649,11 +694,10 @@ function renderFlow(){
 /* ---------- orchestration ---------- */
 function render(){
   document.getElementById('subline').textContent =
-    `${fmt(D.corpus.reviews_analysed)} employee reviews from ${D.corpus.companies} IT employers` +
+    `${fmt(D.corpus.reviews_analysed)} employee reviews from the US IT industry` +
     (state.selected ? ` · showing ${state.selected}` : '');
   renderTopicMap();
-  renderDetail();
-  renderSignals();
+  renderThemeCards();
   renderNetTabs();
   renderNetwork();
   renderStatus();

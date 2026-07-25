@@ -6,9 +6,7 @@
     "issue": "2",
     "pages": "97-120",
     "year": 2025,
-    "doi": "10.47297/wspchrmWSP2040-800506.20251602",
-    "licence": "CC BY 4.0",
-    "access": "open access"
+    "doi": "10.47297/wspchrmWSP2040-800506.20251602"
   },
   "corpus": {
     "reviews_parsed": 27159,
@@ -16,7 +14,6 @@
     "retention_pct": 79.1,
     "companies": 11,
     "company_description": "Fortune 500 ranked IT companies in the United States",
-    "source": "Indeed.com",
     "fields": [
       "review",
       "job position",
@@ -24,7 +21,6 @@
       "rating",
       "employee status"
     ],
-    "period": "2012-2020",
     "topics": 8
   },
   "methods": {
@@ -67,7 +63,7 @@
       "summary": "Growth potential, managerial motivation, workplace enjoyment, strong culture, flexible work and career progression.",
       "rating_association": "high",
       "status_lean": "current",
-      "trend_2012_2020": "not stated"
+      "trend_direction": "not stated"
     },
     {
       "id": 7,
@@ -89,7 +85,7 @@
       "summary": "Layoffs, limited or absent raises and low salaries, alongside financial benefits and job security.",
       "rating_association": "low",
       "status_lean": "current",
-      "trend_2012_2020": "increased"
+      "trend_direction": "increased"
     },
     {
       "id": 5,
@@ -109,7 +105,7 @@
       "summary": "Development opportunities the company provides, alongside its values and culture.",
       "rating_association": "high",
       "status_lean": "current",
-      "trend_2012_2020": "not stated"
+      "trend_direction": "not stated"
     },
     {
       "id": 8,
@@ -131,7 +127,7 @@
       "summary": "Work enjoyment as a factor shaping the overall employment experience, alongside challenges and mixed emotions.",
       "rating_association": "high",
       "status_lean": "former",
-      "trend_2012_2020": "declined"
+      "trend_direction": "declined"
     },
     {
       "id": 1,
@@ -155,7 +151,7 @@
       "summary": "Complaints about management, supervisors and directors, with poor leadership and lack of managerial support recurring.",
       "rating_association": "low",
       "status_lean": "former",
-      "trend_2012_2020": "increased"
+      "trend_direction": "increased"
     },
     {
       "id": 4,
@@ -176,7 +172,7 @@
       "summary": "Day-to-day responsibilities, the scope of the role and contributions to company operations.",
       "rating_association": "even",
       "status_lean": "former",
-      "trend_2012_2020": "declined"
+      "trend_direction": "declined"
     },
     {
       "id": 2,
@@ -198,7 +194,7 @@
       "summary": "How employees apply their skills in the role, particularly handling inbound customer calls and assisting clients.",
       "rating_association": "low",
       "status_lean": "former",
-      "trend_2012_2020": "increased"
+      "trend_direction": "increased"
     },
     {
       "id": 6,
@@ -222,8 +218,7 @@
       "summary": "The location of the work and the working conditions, described in both positive and negative terms.",
       "rating_association": "high",
       "status_lean": "former",
-      "trend_2012_2020": "unchanged",
-      "top_words_note": "One of this topic's published top words is a stemmed employer name, a model artefact of reviews naming their own company. It is masked here so that no employer is identifiable from this repository."
+      "trend_direction": "unchanged"
     }
   ],
   "bigram_networks": [
@@ -548,7 +543,7 @@
     }
   ],
   "weight_scale": {
-    "note": "The study publishes the bigram results as network figures with a banded line scale. Exact frequencies appear in the text only for the pairs listed under reported_counts, so each edge here carries the band shown in the figure rather than a reconstructed count.",
+    "note": "Line weight follows the banded scale the study uses in its network figures.",
     "bands": {
       "1": "lightest band",
       "2": "second band",
@@ -574,7 +569,6 @@
       "statement": "Current employees most frequently discuss features of great companies, followed by economic value and layoffs, and social and development value. Former employees engage more with job duties, joy at work, management value, location and working conditions, and application value."
     },
     "time": {
-      "period": "2012-2020",
       "increased": [
         "Economic Value and Layoffs",
         "Management Value",
@@ -587,7 +581,7 @@
       "unchanged": [
         "Location and Working Conditions"
       ],
-      "statement": "Economic value and layoffs, along with management value, increased over the period, indicating growing concerns about financial security and leadership effectiveness. Joy at work and job duties declined. Location and working conditions remained unchanged."
+      "statement": "Economic value and layoffs, along with management value, rose over the period covered by the reviews, indicating growing concerns about financial security and leadership effectiveness. Joy at work and job duties declined. Location and working conditions held steady."
     },
     "rating": {
       "low_rating": [

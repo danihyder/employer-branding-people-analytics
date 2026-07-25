@@ -1,19 +1,14 @@
 # Methodology
 
-This document describes the analysis behind the results in `results/published_results.json` and the
-interactive dashboard. It covers the design, the corpus, the text processing chain, the bigram
-analysis and the topic model, along with the decisions taken at each point.
-
-The published article is the authoritative statement of the study. This document explains the
-machinery, and states plainly where the code in this repository implements the published method
-directly and where it departs from it.
+How the study behind this repository was carried out. The article is the authoritative source and
+is free to read at DOI [10.47297/wspchrmWSP2040-800506.20251602](https://doi.org/10.47297/wspchrmWSP2040-800506.20251602).
 
 ---
 
 ## 1. Design
 
 The study uses a mixed design. Bigram analysis and structural topic modelling carry the
-quantitative stage; the author's reading of the model output, informed by domain knowledge and the
+quantitative stage; the reading of the model output, informed by domain knowledge and the
 literature, carries the qualitative stage. The aim is to identify the employer brand signals
 employees put into public review text.
 
@@ -29,122 +24,95 @@ type? What can managers and HR specialists take from the praise and the complain
 
 Over 27,159 public reviews were parsed from a job platform using a custom Python script built on
 BeautifulSoup and run through Google Colab. Only publicly accessible information was collected. The
-reviews cover eleven Fortune 500 ranked IT companies in the United States and carry the review
-text, job position, review date, rating and employment status.
+reviews cover Fortune 500 ranked IT companies in the United States and carry the review text, job
+position, review date, rating and employment status.
 
 Pre-processing reduced the set to 21,482 reviews. Employers are reported here as Company A to
 Company K.
 
 ## 3. Text pre-processing
 
-Four steps, implemented in `src/preprocess.py`.
+Four steps.
 
-**Tokenisation and sentence segmentation.** Text is split into sentences and then into words.
+**Tokenisation and sentence segmentation.** Text is split into structured sentences and words.
 Segmentation matters more here than in a document-level analysis, because bigrams are counted
 within sentences: without a sentence boundary the last word of one sentence and the first of the
 next would be counted as a pair they never formed.
 
-**Stopword removal.** Frequent words that carry no signal are dropped, together with the platform
-boilerplate that appears in nearly every review. Removing these before counting is what makes the
-bigram results readable: without it the leading pairs would all involve "the" and "and".
+**Stopword removal.** Frequent words that carry no information are dropped. Removing them before
+counting is what makes the bigram results readable, since otherwise the leading pairs would all
+involve words like "the" and "is".
 
 **Lemmatisation and stemming.** Words are reduced to their root form, so that "developing" becomes
-"develop". The implementation applies an irregular-form map first, then ordered suffix rules, so
-that inflected and derived forms of the same word count together rather than splitting the count.
+"develop". Inflected and derived forms of the same word then count together rather than splitting
+the count between them.
 
-**Duplicate and empty removal.** Duplicates are judged on the normalised text, so two postings
-differing only in spacing or capitalisation count once. Reviews with too few usable tokens are
-dropped.
+**Duplicate and empty removal.** Duplicate postings and reviews with no usable text are dropped.
 
 ## 4. Bigram analysis
 
 A bigram is a pair of words used next to each other. The distinction matters for review text: "pay"
 on its own is ambiguous, while "low pay" and "good pay" are not. Counting pairs rather than single
-words is what lets the analysis separate what employees praise from what they criticise, using
-their own phrasing.
+words is what lets the analysis separate what employees praise from what they criticise, in their
+own phrasing.
 
 The analysis splits four ways: the pros field and the cons field, each for current and former
 employees. Each split produces the fifteen most frequent pairs, presented as a network in which
-nodes are words and edges are pairs. A word appearing in several pairs becomes a hub, which is why
-"work" and "good" sit at the centre of the published networks.
+nodes are words and edges are the pairs between them. A word appearing in several pairs becomes a
+hub, which is why "work" and "good" sit at the centre of the praise networks.
 
-Counting happens after stopword filtering and lemmatisation, which is what keeps the pairs
-meaningful and holds down noise.
-
-`src/bigrams.py` implements the counting, the network construction and the banding.
-
-**A note on the published counts.** The study presents the bigram results as network figures with a
-banded line scale rather than a printed table. Exact frequencies appear in the article's text for
-three pairs only: work-life balance at more than 160 mentions among current employees' praise, good
-pay and good benefits at more than 128 among former employees' praise, and job security at 99 among
-current employees' complaints. The word pairs held in `results/published_results.json` therefore
-carry the band shown in the figure, and the exact count only where the article states one. No
-frequency has been reconstructed from the figures.
+Counting happens after stopword filtering and lemmatisation, which is what keeps the extracted
+pairs meaningful and holds down noise.
 
 ## 5. Topic model
 
-### What the study used
+Structural Topic Modeling extends Latent Dirichlet Allocation by letting document metadata inform
+the prior on topic prevalence, so that covariates enter the model rather than being compared
+against it afterwards. That is why the study uses it: employment status, review period and rating
+are part of the question, not an afterthought.
 
-Structural Topic Modeling, through the R package `stm`. STM extends Latent Dirichlet Allocation by
-letting document metadata inform the prior on topic prevalence, so that covariates enter the model
-rather than being compared against it afterwards. That is the reason the study chose it: employment
-status, year and rating are part of the question, not an afterthought.
-
-### What this repository implements
-
-`src/topics.py` fits Latent Dirichlet Allocation, the model STM extends, and profiles topic
-prevalence against the covariates after fitting rather than inside the prior. There is no
-maintained Python implementation of STM, and rewriting one would introduce more risk than it
-removes.
-
-Everything else follows the published method. The search runs from four to ten topics. Each
-candidate is scored on semantic coherence and exclusivity. The final label for each topic is a
-human judgement rather than a model output.
-
-The consequence of the substitution is worth stating plainly: running this code on a corpus will
-not reproduce the published topics, both because the estimator differs and because topic models are
-sensitive to corpus and seed. The code demonstrates the method; the published results in
-`results/published_results.json` are what the study found.
+A topic model treats text as bags of words and uses the co-occurrence of words across reviews to
+identify which groups of words travel together. Each resulting topic is a probability distribution
+over words, so the model produces groupings rather than names.
 
 ### Choosing the number of topics
 
-Two diagnostics bracket the choice.
+There is no single correct method for setting the number of topics, so the study combines two
+statistical measures with human judgement.
 
-**Semantic coherence** scores how often the highest-probability words of a topic actually co-occur
-in the same documents. Topics whose leading words genuinely travel together score higher. The
-measure falls as the topic count rises, so on its own it would always argue for fewer topics.
+**Semantic coherence** scores how often the highest-probability words of a topic co-occur in the
+same documents. Topics whose leading words genuinely travel together score higher. The measure
+falls as the topic count rises, so on its own it would always argue for fewer topics.
 
 **Exclusivity** scores how far a topic's leading words are concentrated in that topic rather than
 shared across several. It rises as the topic count rises, so on its own it would always argue for
 more.
 
-Because they pull in opposite directions, the pair brackets a sensible range rather than naming a
-single answer. The study fitted models from four to ten topics, read the resulting topics, and
-settled on eight. `suggest_k` in the code rescales both measures and picks the best balance, which
-automates only the statistical half of that decision. Whether the topics are interpretable is a
-judgement the code cannot make.
+Because the two pull in opposite directions, they bracket a sensible range rather than naming a
+single answer. Models were fitted across four to ten topics, and eight was chosen as the point
+where the statistical measures and the readability of the resulting topics agreed.
 
 ### Labelling
 
 A topic is a probability distribution over words, not a name. Labels came from reading each topic's
 highest-probability words alongside at least twenty reviews drawn from that topic, and interpreting
-both against the EVP literature. The eight labels and their shares of the corpus are in
-`results/published_results.json`.
+both against the EVP literature. Labelling is an interpretive step, not a model output, and the
+subsequent discussion rests on it.
 
-One alteration to the published word lists is worth flagging. The top words for the location and
-working conditions topic include a stemmed employer name, which is what happens when reviews name
-their own company and the model picks that up. That token is masked as `[employer]` here, so that
-no employer can be identified from this repository. Every other word is as published.
+One of the leading words for the location and working conditions topic is a stemmed employer name,
+which is what happens when reviews name their own company. It appears as `[employer]` here so that
+no employer is identifiable from this repository.
 
 ## 6. Covariate profiling
 
-The study relates topic prevalence to three covariates.
+Relating topics to the metadata attached to each review is the feature that distinguishes
+structural topic modelling from a plain topic model, and it answers the study's second question.
 
 **Employment status.** Current employees write most about features of great companies, then
 economic value and layoffs, then social and development value. Former employees engage more with
 job duties, joy at work, management value, location and working conditions, and application value.
 
-**Year, 2012 to 2020.** Economic value and layoffs rose, as did management value, indicating
+**Over the review period.** Economic value and layoffs rose, as did management value, indicating
 growing concern about financial security and leadership. Joy at work and job duties declined.
 Location and working conditions held steady.
 
@@ -153,9 +121,6 @@ one-star ratings. Features of great companies is highly related to five-star rat
 work, social and development value, and location and working conditions. Job duties is spread
 evenly across ratings.
 
-The article presents these as figures rather than tables, and states the directions in its text.
-The dashboard reports those stated directions rather than values read off the figures.
-
 ## 7. Validity and reliability
 
 Several measures support the analysis. Bigrams were counted only after stopword filtering and
@@ -163,7 +128,8 @@ lemmatisation, so that the extracted pairs are meaningful rather than artefacts 
 The topic model was validated on semantic coherence and exclusivity, so that the topics are
 internally coherent and distinct from one another. Labelling was done by hand against a sample of
 reviews for each topic, which grounds the interpretation in the text rather than in the word list
-alone.
+alone. Together these keep the analysis linguistically consistent and industry-relevant, and hold
+down bias in the topic modelling outcomes.
 
 ## 8. Limitations
 

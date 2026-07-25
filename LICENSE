@@ -25,13 +25,9 @@ SOFTWARE.
 The MIT License above covers the code in this repository.
 
 The figures in results/published_results.json report the results of the study
-cited below. They are facts about that analysis rather than material this
-repository licenses. Cite the article when referring to them:
+cited below. Cite the article when referring to them:
 
   "Leveraging People Analytics for Employer Branding: A Text Mining Study of
   Employee Reviews in IT Industry", Journal of Chinese Human Resources
   Management, 16(2), 97-120, 2025,
   DOI 10.47297/wspchrmWSP2040-800506.20251602.
-
-The article is open access under the Creative Commons Attribution 4.0
-International licence and is free to read in full at that DOI.
