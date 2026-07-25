@@ -30,9 +30,10 @@ Work-life balance and competitive compensation are the most positively associate
 security is the most frequently criticised aspect.
 
 Current employees lead their praise with work-life balance, mentioned more than 160 times. Former
-employees lead theirs with good pay and good benefits, mentioned more than 128 times. Job security
-is the leading complaint for both groups, mentioned 99 times by current employees, and former
-employees raise management more often than current employees do.
+employees lead theirs with good pay and good benefits, mentioned more than 128 times. On the
+complaints side, current employees raise job security most, mentioned 99 times, while job security
+and short breaks are the most common complaints among former employees, who also raise management
+more often than current employees do.
 
 ### The eight themes
 
