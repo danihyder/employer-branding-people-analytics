@@ -1,8 +1,8 @@
-# People Analytics for Employer Branding
+# Employer Branding Through People Analytics
 
 What 21,482 IT employees wrote about their employers, and what a text mining study found in it.
 
-**[Open the interactive dashboard](https://danihyder.github.io/people-analytics-employer-branding/)**
+**[Open the interactive dashboard](https://danihyder.github.io/employer-branding-people-analytics/)**
 
 ---
 
